@@ -31,7 +31,7 @@ const usage = [
   , ''
   , '     down             migrate down by 1 file'
   , '     down   [name]    migrate down till given migration'
-  , '     down   --all     migrate down to init state'
+  , '     down   all       migrate down to init state'
   , '     up     [name]    migrate up till given migration (the default command)'
   , '     create [title]   create a new migration file with optional [title]'
   , ''
