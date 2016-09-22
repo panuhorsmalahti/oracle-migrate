@@ -1,0 +1,19 @@
+{
+  "name": "oracle-migrate",
+  "version": "1.0.0",
+  "description": "Abstract migration framework for node",
+  "main": "index.js",
+  "scripts": {
+    "create": "node ./bin/migrate create",
+    "up": "node ./bin/migrate up",
+    "down": "node ./bin/migrate down",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Oleh Chaplya",
+  "license": "MIT",
+  "dependencies": {
+    "dateformat": "^1.0.12",
+    "oracledb": "^1.11.0",
+    "simple-oracledb": "^1.1.21"
+  }
+}

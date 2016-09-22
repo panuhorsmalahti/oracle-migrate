@@ -1,0 +1,235 @@
+#!/usr/bin/env node
+
+const migrate = require('../')
+const path = require('path')
+const fs = require('fs')
+const dateFormat = require('dateformat')
+const oracledb = require('../lib/oracledb')
+
+let args = process.argv.slice(2)
+let options = { args: [] }
+
+/**
+ * Current working directory
+ */
+let cwd
+
+/**
+ * Usage information
+ */
+const usage = [
+    ''
+  , '  Usage: migrate [options] [command]'
+  , ''
+  , '  Options:'
+  , ''
+  , '     -c, --chdir <path>      change the working directory'
+  , '     --state-file <path>     set path to state file (migrations/.migrate)'
+  , '     --template-file <path>  set path to template file to use for new migrations'
+  , '     --date-format <format>  set a date format to use for new migration filenames'
+  , '  Commands:'
+  , ''
+  , '     down             migrate down by 1 file'
+  , '     down   [name]    migrate down till given migration'
+  , '     down   --all     migrate down to init state'
+  , '     up     [name]    migrate up till given migration (the default command)'
+  , '     create [title]   create a new migration file with optional [title]'
+  , ''
+].join('\n')
+
+/**
+ * Migration template
+ */
+const template = fs.readFileSync(path.join('templates/create.js'), 'utf8')
+
+/**
+ * Require an argument
+ */
+function required() {
+  if (args.length) return args.shift()
+  abort(arg + ' requires an argument')
+}
+
+/**
+ * Abort with a message
+ */
+function abort(msg) {
+  console.error('  %s', msg)
+  process.exit(1)
+}
+
+/*
+ * Parse arguments
+ */
+let arg
+while (args.length) {
+  arg = args.shift()
+  switch (arg) {
+    case '-h':
+    case '--help':
+    case 'help':
+      console.log(usage)
+      process.exit()
+      break
+    case '-c':
+    case '--chdir':
+      process.chdir(cwd = required())
+      break
+    case '--state-file':
+      options.stateFile = required()
+      break
+    case '--template-file':
+      template = fs.readFileSync(required())
+      break
+    case '--date-format':
+      options.dateFormat = required()
+      break
+    default:
+      if (options.command) {
+        options.args.push(arg)
+      } else {
+        options.command = arg
+      }
+  }
+}
+
+/**
+ * Log a keyed message.
+ *
+ * @param {string} key error type
+ * @param {string} msg message to log
+ */
+function log(key, msg) {
+  console.log('  \033[90m%s :\033[0m \033[36m%s\033[0m', key, msg)
+}
+
+/**
+ * Slugify the given `str`.
+ */
+function slugify(str) {
+  return str.replace(/\s+/g, '-')
+}
+
+/**
+ * List of all available commands
+ */
+let commands = {
+
+  /**
+   * up [name]
+   */
+  up: function(migrationName) {
+    performMigration('up', migrationName)
+  },
+
+  /**
+   * down [name]
+   */
+  down: function(migrationName) {
+    performMigration('down', migrationName)
+  },
+
+  /**
+   * Create new file from template with title (if present)
+   */
+  create: function() {
+    let curr = Date.now()
+    let title = slugify([].slice.call(arguments).join(' '))
+
+    if (options.dateFormat) {
+      curr = dateFormat(curr, options.dateFormat)
+    }
+
+    title = title ? curr + '-' + title : curr + '-noname'
+
+    const o = createSql(title)
+    let templateModified = template
+
+    templateModified = templateModified.replace(/{up}/, o.pathUp)
+    templateModified = templateModified.replace(/{down}/, o.pathDown)
+
+    create(title, templateModified)
+  }
+}
+
+/**
+ * Create a migration with the given `name`.
+ * Creates related sql files in sql folder
+ *
+ * @param {string} name file name
+ * @param {string} template template file
+ */
+function create(name, template) {
+  let p = path.join('migrations', name + '.js')
+  log('create', path.join(process.cwd(), p))
+  fs.writeFileSync(p, template)
+}
+
+/**
+ * Creates sqls
+ *
+ * @param {string} name file name
+ */
+function createSql(name) {
+  const pathUp = `migrations/sql/${name}-up.sql`
+  const pathDown = `migrations/sql/${name}-down.sql`
+
+  fs.writeFileSync(pathUp, '')
+  fs.writeFileSync(pathDown, '')
+
+  return { pathUp, pathDown }
+}
+
+/**
+ * Perform a migration in the given `direction`.
+ *
+ * @param {number} direction direction
+ * @param {string} migrationName migration file name if present
+ */
+function performMigration(direction, migrationName) {
+  const set = migrate.load('migrations', oracledb.config)
+
+  set.on('init', () => {
+    /*
+     * Just log to console every migration
+     */
+    set.on('migration', (migration, direction) => {
+      log(direction, migration.title)
+    })
+
+    /*
+     * Do migration
+     */
+    set[direction](migrationName, err => {
+      if (err) {
+        log('error', err)
+        process.exit(0)
+      }
+
+      log('migration', 'complete')
+      process.exit(0)
+    })
+  })
+
+  set.on('error', err => {
+    log('migration error', err)
+    process.exit(0)
+  })
+}
+
+/**
+ * Prepare folders if they don't exist
+ *
+ * ./migrations
+ * ./migrations/sql
+ */
+try { fs.mkdirSync(path.join('migrations'), 0o774) } catch (ex) {}
+try { fs.mkdirSync(path.join('migrations', 'sql'), 0o774) } catch (ex) {}
+
+/**
+ * Invoke command
+ */
+let command = options.command || 'up'
+if (!(command in commands)) abort('unknown command "' + command + '"')
+command = commands[command]
+command.apply(this, options.args)
