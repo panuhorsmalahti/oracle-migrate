@@ -73,9 +73,6 @@ while (args.length) {
     case '--chdir':
       process.chdir(cwd = required())
       break
-    case '--state-file':
-      options.stateFile = required()
-      break
     case '--template-file':
       template = fs.readFileSync(required())
       break
@@ -92,7 +89,7 @@ while (args.length) {
 }
 
 /**
- * Log a keyed message.
+ * Log a keyed message
  *
  * @param {string} key error type
  * @param {string} msg message to log
@@ -102,7 +99,9 @@ function log(key, msg) {
 }
 
 /**
- * Slugify the given `str`.
+ * Slugify the given `str`
+ *
+ * @param {string} str string to slugify
  */
 function slugify(str) {
   return str.replace(/\s+/g, '-')
@@ -112,25 +111,24 @@ function slugify(str) {
  * List of all available commands
  */
 let commands = {
-
   /**
    * up [name]
    */
-  up: function(migrationName) {
+  up: (migrationName) => {
     performMigration('up', migrationName)
   },
 
   /**
    * down [name]
    */
-  down: function(migrationName) {
+  down: (migrationName) => {
     performMigration('down', migrationName)
   },
 
   /**
    * Create new file from template with title (if present)
    */
-  create: function() {
+  create: () => {
     let curr = Date.now()
     let title = slugify([].slice.call(arguments).join(' '))
 
