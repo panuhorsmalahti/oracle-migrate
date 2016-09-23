@@ -21,12 +21,6 @@ const usage = [
     ''
   , '  Usage: migrate [options] [command]'
   , ''
-  , '  Options:'
-  , ''
-  , '     -c, --chdir <path>      change the working directory'
-  , '     --state-file <path>     set path to state file (migrations/.migrate)'
-  , '     --template-file <path>  set path to template file to use for new migrations'
-  , '     --date-format <format>  set a date format to use for new migration filenames'
   , '  Commands:'
   , ''
   , '     down             migrate down by 1 file'
@@ -40,7 +34,7 @@ const usage = [
 /**
  * Migration template
  */
-const template = fs.readFileSync(path.join('templates/create.js'), 'utf8')
+const template = fs.readFileSync(path.join(__dirname, '../', 'templates/create.js'), 'utf8')
 
 /**
  * Require an argument

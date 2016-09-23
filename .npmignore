@@ -1,4 +1,7 @@
+*.sock
+.vscode
+examples
+migrations
 support
 test
-examples
-*.sock
+tests

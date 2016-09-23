@@ -1,1 +1,0 @@
-alter table "USERS" drop column "XZVQWEE"
