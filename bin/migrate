@@ -18,17 +18,21 @@ let cwd
  * Usage information
  */
 const usage = [
-    ''
-  , '  Usage: migrate [options] [command]'
-  , ''
-  , '  Commands:'
-  , ''
-  , '     down             migrate down by 1 file'
-  , '     down   [name]    migrate down till given migration'
-  , '     down   all       migrate down to init state'
-  , '     up     [name]    migrate up till given migration (the default command)'
-  , '     create [title]   create a new migration file with optional [title]'
-  , ''
+  '',
+  '  Usage: migrate [options] [command]',
+  '',
+  '  Commands:',
+  '',
+  '     down             migrate down by 1 file',
+  '     down   [name]    migrate down till given migration',
+  '     down   all       migrate down to init state',
+  '     up     [name]    migrate up till given migration (the default command)',
+  '     create [title]   create a new migration file with optional [title]',
+  '     ---------------------------------------------------------------------------',
+  '     history          fetches migration history from the database and shows it',
+  '     ---------------------------------------------------------------------------',
+  '     help             prints help',
+  ''
 ].join('\n')
 
 /**
@@ -143,6 +147,26 @@ let commands = {
     templateModified = templateModified.replace(/{down}/, o.pathDown)
 
     create(title, templateModified)
+  },
+
+  /**
+  * Shows history of migrations fetched form the database table
+  */
+  history: () => {
+    oracledb.loadMigrateData()
+      .then( data => {
+        if(data.rows.length === 0) {
+          return log('history', 'no history to show')
+        }
+
+        log('history', 'from database')
+        data.rows
+          .sort()
+          .map( e => e.TITLE)
+          .forEach( e => log('       ', e))
+
+      })
+      .catch( err => console.log(err))
   }
 }
 
@@ -223,7 +247,8 @@ try { fs.mkdirSync(path.join('migrations', 'sql'), 0o774) } catch (ex) {}
 /**
  * Invoke command
  */
-let command = options.command || 'up'
+let command = options.command
 if (!(command in commands)) abort('unknown command "' + command + '"')
 command = commands[command]
 command.apply(this, options.args)
+

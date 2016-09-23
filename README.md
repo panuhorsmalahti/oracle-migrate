@@ -28,6 +28,10 @@ Commands:
     down   all       migrate down to init state
     up     [name]    migrate up till given migration (the default command)
     create [title]   create a new migration file with optional [title]
+
+    history          fetches migration history from the database and shows it
+
+    help             prints help
 ```
 
 ## Creating Migrations
@@ -70,7 +74,8 @@ If we were to create another migration using `migrate create`, and then execute 
 
 You can also run migrations incrementally by specifying a migration.
 
-    $ migrate up 1316027433425-coolest-pet.js
+    $ migrate up 1316027433425-
+    coolest-pet.js
     up : migrations/1316027432511-add-pets.js
     up : migrations/1316027432512-add-jane.js
     up : migrations/1316027432575-add-owners.js
@@ -91,3 +96,7 @@ When you run `down all` it will revert all migrations:
     down : migrations/1316027432512-add-jane.js
     migration : complete
 
+## Issues
+
+* Check revert in transactions to make sure that this works correctly
+* Make that sqls can contain multiple statements with custom delimeter
