@@ -1,7 +1,7 @@
 *.sock
 .vscode
 examples
-migrations
+migrations*
 support
 test
 tests
