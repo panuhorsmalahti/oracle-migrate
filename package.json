@@ -35,5 +35,9 @@
     "dateformat": "^1.0.12",
     "oracledb": "^1.11.0",
     "simple-oracledb": "^1.1.21"
+  },
+  "devDependencies": {
+    "@eleks/eslint-config-eleks": "^0.1.1",
+    "eslint": "^2.1.0"
   }
 }

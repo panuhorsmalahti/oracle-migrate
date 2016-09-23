@@ -1,21 +1,16 @@
 #!/usr/bin/env node
 
-const migrate = require('../')
-const path = require('path')
-const fs = require('fs')
-const dateFormat = require('dateformat')
-const child_process = require('child_process')
+const childProcess = require('child_process');
+const dateFormat = require('dateformat');
+const fs = require('fs');
+const path = require('path');
 
-const oracledb = require('../lib/oracledb')
-const _package = require('../package.json')
+const migrate = require('../');
+const _package = require('../package.json');
+const oracledb = require('../lib/oracledb');
 
-let args = process.argv.slice(2)
-let options = { args: [] }
-
-/**
- * Current working directory
- */
-let cwd
+const args = process.argv.slice(2); // eslint-disable-line
+const options = { args: [] };
 
 /**
  * Usage information
@@ -37,59 +32,69 @@ const usage = [
   '     ---------------------------------------------------------------------------',
   '     help, -h, --help   prints help',
   ''
-].join('\n')
+].join('\n');
 
 /**
  * Migration template
  */
-const template = fs.readFileSync(path.join(__dirname, '../', 'templates/create.js'), 'utf8')
+const templateFile = fs.readFileSync(path.join(__dirname, '../', 'templates/create.js'), 'utf8');
 
 /**
  * Require an argument
+ *
+ * @returns {undefined}
  */
 function required() {
-  if (args.length) return args.shift()
-  abort(arg + ' requires an argument')
+  if (args.length) {
+    return args.shift();
+  }
+
+  abort(`${arg} requires an argument`);
 }
 
 /**
- * Abort with a message
+ * Abort with a message and exits process with error `1`
+ *
+ * @param {string} msg mesasage to show
+ * @returns {undefined}
  */
 function abort(msg) {
-  console.error('  %s', msg)
-  process.exit(1)
+  console.error('  %s', msg);
+  process.exit(1);
 }
 
 /*
  * Parse arguments
  */
-let arg
-while (args.length) {
-  arg = args.shift()
-  switch (arg) {
-    case '-h':
-    case '--help':
-    case 'help':
-      console.log(usage)
-      process.exit()
-      break
-    case '--date-format':
-      options.dateFormat = required()
-      break
-    case '--install-dep':
-      Object.keys(_package.dependencies)
-        .forEach( e => {
-          child_process.execSync(`npm install ${e} --save`, { stdio: [0, 1, 2] })
-        })
+let arg;
 
-      process.exit()
-      break
-    default:
-      if (options.command) {
-        options.args.push(arg)
-      } else {
-        options.command = arg
-      }
+while (args.length) {
+  arg = args.shift();
+
+  switch (arg) {
+  case '-h':
+  case '--help':
+  case 'help':
+    console.log(usage);
+    process.exit();
+    break;
+  case '--date-format':
+    options.dateFormat = required();
+    break;
+  case '--install-dep':
+    Object.keys(_package.dependencies)
+      .forEach(e => {
+        childProcess.execSync(`npm install ${e} --save`, {stdio: [0, 1, 2]});
+      });
+
+    process.exit();
+    break;
+  default:
+    if (options.command) {
+      options.args.push(arg);
+    } else {
+      options.command = arg;
+    }
   }
 }
 
@@ -98,107 +103,121 @@ while (args.length) {
  *
  * @param {string} key error type
  * @param {string} msg message to log
+ * @returns {undefined}
  */
 function log(key, msg) {
-  console.log('  \033[90m%s :\033[0m \033[36m%s\033[0m', key, msg)
+  console.log('  \0o33[90m%s :\0o33[0m \0o33[36m%s\0o33[0m', key, msg);
 }
 
 /**
  * Slugify the given `str`
  *
  * @param {string} str string to slugify
+ * @returns {string} returns string where spaces are replaced by `-`
  */
 function slugify(str) {
-  return str.replace(/\s+/g, '-')
+  return str.replace(/\s+/g, '-');
 }
 
 /**
  * List of all available commands
  */
-let commands = {
+const commands = {
   /**
    * up [name]
+   *
+   * @param {string} migrationName migration file name
+   * @returns {undefined}
    */
-  up: (migrationName) => {
-    performMigration('up', migrationName)
+  up: migrationName => {
+    performMigration('up', migrationName);
   },
 
   /**
    * down [name]
+   *
+   * @param {string} migrationName migration file name
+   * @returns {undefined}
    */
-  down: (migrationName) => {
-    performMigration('down', migrationName)
+  down: migrationName => {
+    performMigration('down', migrationName);
   },
 
   /**
    * Create new file from template with title (if present)
+   *
+   * @returns {undefined}
    */
   create: () => {
-    let curr = Date.now()
-    let title = slugify(options.args[0])
+    let curr = Date.now();
+    let title = slugify(options.args[0]);
 
     if (options.dateFormat) {
-      curr = dateFormat(curr, options.dateFormat)
+      curr = dateFormat(curr, options.dateFormat);
     }
 
-    title = title ? curr + '-' + title : curr + '-noname'
+    title = title ? `${curr}-${title}` : `${curr}-noname`;
 
-    const o = createSql(title)
-    let templateModified = template
+    const o = createSql(title);
+    let templateModified = templateFile;
 
-    templateModified = templateModified.replace(/{up}/, o.pathUp)
-    templateModified = templateModified.replace(/{down}/, o.pathDown)
+    templateModified = templateModified.replace(/{up}/, o.pathUp);
+    templateModified = templateModified.replace(/{down}/, o.pathDown);
 
-    create(title, templateModified)
+    create(title, templateModified);
   },
 
   /**
-  * Shows history of migrations fetched form the database table
-  */
+   * Shows history of migrations fetched form the database table
+   *
+   * @returns {undefined}
+   */
   history: () => {
     oracledb.loadMigrateData()
-      .then( data => {
-        if(data.rows.length === 0) {
-          return log('history', 'no history to show')
+      .then(data => {
+        if (data.rows.length === 0) {
+          return log('history', 'no history to show');
         }
 
-        log('history', 'from database')
+        log('history', 'from database');
         data.rows
           .sort()
-          .map( e => e.TITLE)
-          .forEach( e => log('       ', e))
-
+          .map(e => e.TITLE)
+          .forEach(e => log('       ', e));
       })
-      .catch( err => console.log(err))
+      .catch(err => console.log(err));
   }
-}
+};
 
 /**
  * Create a migration with the given `name`.
  * Creates related sql files in sql folder
  *
  * @param {string} name file name
- * @param {string} template template file
+ * @param {string} template template file string
+ * @returns {undefined}
  */
 function create(name, template) {
-  let p = path.join('migrations', name + '.js')
-  log('create', path.join(process.cwd(), p))
-  fs.writeFileSync(p, template)
+  const p = path.join(`migrations ${name}.js`);
+
+  log('create', path.join(process.cwd(), p));
+  fs.writeFileSync(p, template);
 }
 
 /**
  * Creates sqls
  *
  * @param {string} name file name
+ * @returns {object} returns 2 paths
  */
 function createSql(name) {
-  const pathUp = `migrations/sql/${name}-up.sql`
-  const pathDown = `migrations/sql/${name}-down.sql`
+  const pathUp = `migrations/sql/${name}-up.sql`;
+  const pathDown = `migrations/sql/${name}-down.sql`;
 
-  fs.writeFileSync(pathUp, '')
-  fs.writeFileSync(pathDown, '')
+  fs.writeFileSync(pathUp, '');
+  fs.writeFileSync(pathDown, '');
 
-  return { pathUp, pathDown }
+  return { pathUp, pathDown };
 }
 
 /**
@@ -206,36 +225,37 @@ function createSql(name) {
  *
  * @param {number} direction direction
  * @param {string} migrationName migration file name if present
+ * @returns {undefined}
  */
 function performMigration(direction, migrationName) {
-  const set = migrate.load('migrations', oracledb.config)
+  const set = migrate.load('migrations', oracledb.config);
 
   set.on('init', () => {
     /*
      * Just log to console every migration
      */
-    set.on('migration', (migration, direction) => {
-      log(direction, migration.title)
-    })
+    set.on('migration', (migration, _direction) => {
+      log(_direction, migration.title);
+    });
 
     /*
      * Do migration
      */
     set[direction](migrationName, err => {
       if (err) {
-        log('error', err)
-        process.exit(0)
+        log('error', err);
+        process.exit(0);
       }
 
-      log('migration', 'complete')
-      process.exit(0)
-    })
-  })
+      log('migration', 'complete');
+      process.exit(0);
+    });
+  });
 
   set.on('error', err => {
-    log('migration error', err)
-    process.exit(0)
-  })
+    log('migration error', err);
+    process.exit(0);
+  });
 }
 
 /**
@@ -244,14 +264,22 @@ function performMigration(direction, migrationName) {
  * ./migrations
  * ./migrations/sql
  */
-try { fs.mkdirSync(path.join('migrations'), 0o774) } catch (ex) {}
-try { fs.mkdirSync(path.join('migrations', 'sql'), 0o774) } catch (ex) {}
+try {
+  fs.mkdirSync(path.join('migrations'), 0o774); // eslint-disable-line
+} catch (ex) {} // eslint-disable-line
+
+try {
+  fs.mkdirSync(path.join('migrations', 'sql'), 0o774); // eslint-disable-line
+} catch (ex) {} // eslint-disable-line
 
 /**
  * Invoke command
  */
-let command = options.command
-if (!(command in commands)) abort('unknown command "' + command + '"')
-command = commands[command]
-command.apply(this, options.args)
+let command = options.command;
 
+if (!(command in commands)) {
+  abort(`unknown command "${command}"`);
+}
+
+command = commands[command];
+command.apply(this, options.args);
