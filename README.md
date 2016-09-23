@@ -30,6 +30,7 @@ Commands:
     create [title]   create a new migration file with optional [title]
 
     history          fetches migration history from the database and shows it
+    --install-dep    executes npm to install and save for you dependencies
 
     help             prints help
 ```

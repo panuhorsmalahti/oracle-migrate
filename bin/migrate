@@ -4,7 +4,10 @@ const migrate = require('../')
 const path = require('path')
 const fs = require('fs')
 const dateFormat = require('dateformat')
+const child_process = require('child_process')
+
 const oracledb = require('../lib/oracledb')
+const _package = require('../package.json')
 
 let args = process.argv.slice(2)
 let options = { args: [] }
@@ -19,19 +22,20 @@ let cwd
  */
 const usage = [
   '',
-  '  Usage: migrate [options] [command]',
+  '  Usage: migrate [command]',
   '',
   '  Commands:',
   '',
-  '     down             migrate down by 1 file',
-  '     down   [name]    migrate down till given migration',
-  '     down   all       migrate down to init state',
-  '     up     [name]    migrate up till given migration (the default command)',
-  '     create [title]   create a new migration file with optional [title]',
+  '     down               migrate down by 1 file',
+  '     down   [name]      migrate down till given migration',
+  '     down   all         migrate down to init state',
+  '     up     [name]      migrate up till given migration (the default command)',
+  '     create [title]     create a new migration file with optional [title]',
   '     ---------------------------------------------------------------------------',
-  '     history          fetches migration history from the database and shows it',
+  '     history            fetches migration history from the database and shows it',
+  '     --install-dep      executes npm to install and save for you dependencies',
   '     ---------------------------------------------------------------------------',
-  '     help             prints help',
+  '     help, -h, --help   prints help',
   ''
 ].join('\n')
 
@@ -69,15 +73,16 @@ while (args.length) {
       console.log(usage)
       process.exit()
       break
-    case '-c':
-    case '--chdir':
-      process.chdir(cwd = required())
-      break
-    case '--template-file':
-      template = fs.readFileSync(required())
-      break
     case '--date-format':
       options.dateFormat = required()
+      break
+    case '--install-dep':
+      Object.keys(_package.dependencies)
+        .forEach( e => {
+          child_process.execSync(`npm install ${e} --save`, { stdio: [0, 1, 2] })
+        })
+
+      process.exit()
       break
     default:
       if (options.command) {
@@ -130,7 +135,7 @@ let commands = {
    */
   create: () => {
     let curr = Date.now()
-    let title = slugify([].slice.call(arguments).join(' '))
+    let title = slugify(options.args[0])
 
     if (options.dateFormat) {
       curr = dateFormat(curr, options.dateFormat)
