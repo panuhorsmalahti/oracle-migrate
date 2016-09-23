@@ -24,6 +24,7 @@ const usage = [
   '     down               migrate down by 1 file',
   '     down   [name]      migrate down till given migration',
   '     down   all         migrate down to init state',
+  '     up                 migrate till most recent migration file',
   '     up     [name]      migrate up till given migration (the default command)',
   '     create [title]     create a new migration file with optional [title]',
   '     ---------------------------------------------------------------------------',
@@ -116,7 +117,7 @@ function log(key, msg) {
  * @returns {string} returns string where spaces are replaced by `-`
  */
 function slugify(str) {
-  return str.replace(/\s+/g, '-');
+  return str.replace(/[\s+\'\"]/g, '-');
 }
 
 /**
@@ -150,13 +151,19 @@ const commands = {
    */
   create: () => {
     let curr = Date.now();
-    let title = slugify(options.args[0]);
+    let title = options.args[0]
 
-    if (options.dateFormat) {
-      curr = dateFormat(curr, options.dateFormat);
+    if(!title) {
+      log('error', 'title is not specified');
+      return;
     }
 
-    title = title ? `${curr}-${title}` : `${curr}-noname`;
+    title = slugify(title);
+    title = `${curr}-${title}`;
+
+    /* if (options.dateFormat) {
+      curr = dateFormat(curr, options.dateFormat);
+    } */
 
     const o = createSql(title);
     let templateModified = templateFile;

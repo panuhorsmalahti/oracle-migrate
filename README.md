@@ -24,10 +24,11 @@ Usage: migrate [options] [command]
 Commands:
 
     down             migrate down by 1 file
-    down   [name]    migrate down till given migration
+    down   [name]    migrate down till given file name migration
     down   all       migrate down to init state
+    up               migrate till most recent migration file
     up     [name]    migrate up till given migration (the default command)
-    create [title]   create a new migration file with optional [title]
+    create [title]   create a new migration file with [title]
 
     history          fetches migration history from the database and shows it
     --install-dep    executes npm to install and save for you dependencies
@@ -37,7 +38,7 @@ Commands:
 
 ## Creating Migrations
 
-To create a migration, execute `migrate create` with an title. When title is not specified - `noname` will be added. This will create a node module within `./migrations/` which contains the following two exports and related sql files in the `./migrations/sql` folder:
+To create a migration, execute `migrate create` with an title. This will create a node module within `./migrations/` which contains the following two exports and related sql files in the `./migrations/sql` folder:
 
     exports.up = function(next){
       ...
@@ -82,7 +83,7 @@ CREATE TABLE PLACES
 )
 ```
 
-These SQL statements would be executed in a sequence. When one fails - revert migration will be applied.
+These SQL statements would be executed in a sequence. When one fails - revert migration will be applied (from currently executed file - `down`).
 
 ## Running Migrations
 
@@ -95,7 +96,7 @@ When first running the migrations, all will be executed in sequence.
     up : migrations/1316027433425-coolest-pet.js
     migration : complete
 
-Subsequent attempts will simply output "complete", as they have already been executed in this machine. `node-migrate` knows this because it stores the current state in the database table called `MIGRATIONS`.
+Subsequent attempts will simply output "complete", as they have already been executed in this machine. This module knows this because it stores the current state in the database table called `MIGRATIONS`.
 
     $ migrate
     migration : complete
@@ -107,8 +108,7 @@ If we were to create another migration using `migrate create`, and then execute 
 
 You can also run migrations incrementally by specifying a migration.
 
-    $ migrate up 1316027433425-
-    coolest-pet.js
+    $ migrate up 1316027433425-coolest-pet.js
     up : migrations/1316027432511-add-pets.js
     up : migrations/1316027432512-add-jane.js
     up : migrations/1316027432575-add-owners.js
@@ -122,7 +122,7 @@ This will run up-migrations upto (and including) `1316027433425-coolest-pet.js`.
     down : migrations/1316027432512-add-jane.js
     migration : complete
 
-When you run `down all` it will revert all migrations:
+When you run `down all` it will revert all migrations till initial state (no migrations applied):
 
     $ migrate down all
     down : migrations/1316027432575-add-owners.js
