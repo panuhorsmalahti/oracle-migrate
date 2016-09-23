@@ -55,7 +55,7 @@ For example:
 
 SQL files are created empty, so you can write there your own code. Oracle database can't execute multiple SQL statements in one time, so they should be separated by delimiter:
 
-    `-----`
+    -----
 
 For example:
 
