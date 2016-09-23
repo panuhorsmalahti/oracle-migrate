@@ -22,6 +22,15 @@ function runsql(path) {
 
       if(sql === '') return resolve()
 
+      /*
+       * Split file by delimeter if multiple statements written in sql
+       * Current delimeter is `-----`
+       */
+
+      const sqls = sql.split('-----')
+
+      console.log(sqls)
+
       // exec sql
       oracledb.getConnection({
         user : dbConfig.user,
