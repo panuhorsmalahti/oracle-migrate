@@ -106,7 +106,7 @@ while (args.length) {
  * @returns {undefined}
  */
 function log(key, msg) {
-  console.log('  \0o33[90m%s :\0o33[0m \0o33[36m%s\0o33[0m', key, msg);
+  console.log('  \033[90m%s :\033[0m \033[36m%s\033[0m', key, msg); // eslint-disable-line
 }
 
 /**
@@ -198,7 +198,7 @@ const commands = {
  * @returns {undefined}
  */
 function create(name, template) {
-  const p = path.join(`migrations ${name}.js`);
+  const p = path.join(`migrations/${name}.js`);
 
   log('create', path.join(process.cwd(), p));
   fs.writeFileSync(p, template);
