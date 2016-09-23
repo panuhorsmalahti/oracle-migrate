@@ -29,7 +29,7 @@ function runsql(path) {
 
       const sqls = sql.split('-----')
 
-      console.log(sqls)
+      // console.log(sqls)
 
       // exec sql
       oracledb.getConnection({
