@@ -51,6 +51,38 @@ For example:
     $ migrate create add-pets
     $ migrate create add-owners
 
+SQL files are created empty, so you can write there your own code. Oracle database can't execute multiple SQL statements in one time, so they should be separated by delimiter:
+
+    `-----`
+
+For example:
+
+```
+CREATE TABLE COUNTRIES
+(
+  ID VARCHAR2(20) NOT NULL
+, TITLE VARCHAR2(20)
+, CONSTRAINT COUNTRIES_PK PRIMARY KEY
+  (
+    ID
+  )
+  ENABLE
+)
+-----
+CREATE TABLE PLACES
+(
+  ID VARCHAR2(20) NOT NULL
+, NAME VARCHAR2(20)
+, CONSTRAINT PLACES_PK PRIMARY KEY
+  (
+    ID
+  )
+  ENABLE
+)
+```
+
+These SQL statements would be executed in a sequence. When one fails - revert migration will be applied.
+
 ## Running Migrations
 
 When first running the migrations, all will be executed in sequence.
@@ -95,8 +127,3 @@ When you run `down all` it will revert all migrations:
     down : migrations/1316027432575-add-owners.js
     down : migrations/1316027432512-add-jane.js
     migration : complete
-
-## Issues
-
-* Check revert in transactions to make sure that this works correctly
-* Make that sqls can contain multiple statements with custom delimeter

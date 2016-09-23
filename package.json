@@ -28,7 +28,7 @@
   "engines": {
     "node": ">= 0.6.x"
   },
-  "homepage": "git://github.com/olehch/oracle-migrate",
+  "homepage": "https://github.com/olehch/oracle-migrate",
   "author": "Oleh Chaplya",
   "license": "MIT",
   "dependencies": {
