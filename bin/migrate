@@ -28,6 +28,7 @@ const usage = [
   '     up     [name]      migrate up till given migration (the default command)',
   '     create [title]     create a new migration file with optional [title]',
   '     ---------------------------------------------------------------------------',
+  '     list               shows all local migration scripts',
   '     history            fetches migration history from the database and shows it',
   '     --install-dep      executes npm to install and save for you dependencies',
   '     ---------------------------------------------------------------------------',

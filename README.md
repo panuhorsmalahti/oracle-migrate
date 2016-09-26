@@ -3,23 +3,24 @@ Small migrate framework for Oracle DB
 
 ## Installation
 
+Before installing this module take note how to install `node-oracledb` [here](https://github.com/oracle/node-oracledb)
+
     $ npm install oracle-migrate
 
 ## Configuration
 
-Currently you should have theese evironment variables configured in your system:
+These environment variables are needed to be configured in your system:
 
 ```
-  database username:      NODE_ORACLEDB_USER
-  database password:      NODE_ORACLEDB_PASSWORD
-  url to database:        NODE_ORACLEDB_CONNECTIONSTRING
-  (e.g. `localhost:1521`)
+  database username:      NODE_ORACLEDB_USER=username
+  database password:      NODE_ORACLEDB_PASSWORD=password
+  url to database:        NODE_ORACLEDB_CONNECTIONSTRING=localhost:1521
 ```
 
 ## Usage
 
 ```
-Usage: migrate [options] [command]
+Usage: oracle-migrate [command] [options]
 
 Commands:
 
@@ -27,10 +28,12 @@ Commands:
     down   [name]    migrate down till given file name migration
     down   all       migrate down to init state
     up               migrate till most recent migration file
-    up     [name]    migrate up till given migration (the default command)
+    up     [name]    migrate up till given migration
     create [title]   create a new migration file with [title]
 
+    list             shows all local migration scripts
     history          fetches migration history from the database and shows it
+
     --install-dep    executes npm to install and save for you dependencies
 
     help             prints help
@@ -38,22 +41,16 @@ Commands:
 
 ## Creating Migrations
 
-To create a migration, execute `migrate create` with an title. This will create a node module within `./migrations/` which contains the following two exports and related sql files in the `./migrations/sql` folder:
+To create new migration script, execute `oracle-migrate create [title]` with an title. This will create a `js` file within `./migrations/` and related sql files in the `./migrations/sql` folder:
 
-    exports.up = function(next){
-      ...
-    };
-
-    exports.down = function(next){
-      ...
-    };
+    $ oracle-migrate [title]
 
 For example:
 
-    $ migrate create add-pets
-    $ migrate create add-owners
+    $ oracle-migrate create add-pets
+    $ oracle-migrate create add-owners
 
-SQL files are created empty, so you can write there your own code. Oracle database can't execute multiple SQL statements in one time, so they should be separated by delimiter:
+SQL files are created empty, so you can write there your own code. Oracle database can't execute multiple SQL statements in one time, therefore they need be separated by delimiter:
 
     -----
 
@@ -83,48 +80,98 @@ CREATE TABLE PLACES
 )
 ```
 
-These SQL statements would be executed in a sequence. When one fails - revert migration will be applied (from currently executed file - `down`).
+These SQL statements would be executed in a sequence. When one fails - revert migration will be applied (from currently executed SQL file - `down`).
 
-## Running Migrations
+## Running `up` Migrations
 
-When first running the migrations, all will be executed in sequence.
+To run all migrations till the most recent state:
 
-    $ migrate up
+    $ oracle-migrate up
+
+For example:
+
+    $ oracle-migrate up
     up : migrations/1316027432511-add-pets.js
     up : migrations/1316027432512-add-jane.js
     up : migrations/1316027432575-add-owners.js
     up : migrations/1316027433425-coolest-pet.js
     migration : complete
 
-Subsequent attempts will simply output "complete", as they have already been executed in this machine. This module knows this because it stores the current state in the database table called `MIGRATIONS`.
+To run migrations till given file:
 
-    $ migrate
-    migration : complete
+    $ oracle-migrate up 1316027432512-add-jane.js
 
-If we were to create another migration using `migrate create`, and then execute migrations again, we would execute only those not previously executed:
+For example:
 
-    $ migrate
-    up : migrates/1316027433455-coolest-owner.js
-
-You can also run migrations incrementally by specifying a migration.
-
-    $ migrate up 1316027433425-coolest-pet.js
+    $ oracle-migrate up 1316027432512-add-jane.js
     up : migrations/1316027432511-add-pets.js
     up : migrations/1316027432512-add-jane.js
-    up : migrations/1316027432575-add-owners.js
-    up : migrations/1316027433425-coolest-pet.js
     migration : complete
 
-This will run up-migrations upto (and including) `1316027433425-coolest-pet.js`. Similarly you can run down-migrations upto (and including) a specific migration, instead of migrating all the way down.
+## Running `down` Migrations
 
-    $ migrate down 1316027432512-add-jane.js
+To run `down` migration by one file:
+
+    $ oracle-migrate down
+
+For example:
+
+    $ oracle-migrate down
+    down : migrations/1316027432512-add-jane.js
+    down : migrations/1316027432511-add-pets.js
+    migration : complete
+
+To run `down` migration till given  file:
+
+    $ oracle-migrate down 1316027432511-add-pets.js
+
+For example:
+
+    $ oracle-migrate down 1316027432511-add-pets.js
+    down : migrations/1316027432511-add-pets.js
+    migration : complete
+
+To run `down` migration for all files (revert to state before all migrations executed):
+
+    $ oracle-migrate down all
+
+For example:
+
+    $ oracle-migrate down all
+    down : migrations/1316027433425-coolest-pet.js
     down : migrations/1316027432575-add-owners.js
     down : migrations/1316027432512-add-jane.js
+    down : migrations/1316027432511-add-pets.js
     migration : complete
 
-When you run `down all` it will revert all migrations till initial state (no migrations applied):
+## Additional commands
 
-    $ migrate down all
-    down : migrations/1316027432575-add-owners.js
-    down : migrations/1316027432512-add-jane.js
-    migration : complete
+Show all local migration scripts:
+
+    $ oracle-migrate list
+
+For example:
+
+    $ oracle-migrate list
+    history : local migration files
+            : migrations/1316027433425-coolest-pet.js
+            : migrations/1316027432575-add-owners.js
+            : migrations/1316027432512-add-jane.js
+            : migrations/1316027432511-add-pets.js
+
+Show migration history (fetched from database table, which stores that state):
+
+    $ oracle-migrate history
+
+For example:
+
+    $ oracle-migrate history
+    history : from database
+            : migrations/1316027433425-coolest-pet.js
+            : migrations/1316027432575-add-owners.js
+            : migrations/1316027432512-add-jane.js
+            : migrations/1316027432511-add-pets.js
+
+How to print help:
+
+    $ oracle-migrate help
