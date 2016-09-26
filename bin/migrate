@@ -192,7 +192,29 @@ const commands = {
           .map(e => e.TITLE)
           .forEach(e => log('       ', e));
       })
-      .catch(err => console.log(err));
+      .catch(err => {
+        if(err.message.includes('00942')) {
+          return log('history', 'Migration table does not exists in the database');
+        }
+
+        log('history', err.message);
+      });
+  },
+
+  /**
+   * Shows local migration files
+   * 
+   * @returns {undefined}
+   */
+  list: () => {
+    log('history', 'local migration files');
+
+    fs.readdirSync('./migrations')
+      .filter(file => file.match(/^\d+.*\.js$/))
+      .sort()
+      .forEach(file => {
+        log('       ', file);
+      });
   }
 };
 
