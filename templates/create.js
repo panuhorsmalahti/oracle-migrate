@@ -54,9 +54,9 @@ function getConnection() {
  */
 function readFile(path) {
   return new Promise((resolve, reject) => {
-    fs.readFile(path, 'utf8', (err, sql) => {
-      if (err) {
-        return reject(err);
+    fs.readFile(path, 'utf8', (error, sql) => {
+      if (error) {
+        return reject(error);
       }
 
       resolve(sql);
@@ -107,9 +107,10 @@ function runTransactionSequence(sqls) {
       // run all actions in sequence
       connection.transaction(actions, {
         sequence: true
-      }, err => {
-        if (err) {
-          return reject(err);
+      }, error => {
+        if (error) {
+          _connection.rollback();
+          return reject(error);
         }
 
         resolve();
@@ -129,11 +130,11 @@ exports.up = function (next) {
     .then(splitCommands)
     .then(runTransactionSequence)
     .then(() => next(null))
-    .catch(err => {
-      console.log('"up" migration was failed so rollback changes were applied using "down" migration');
+    .catch(error => {
+      console.log('"up" migration was failed so rollback was applied');
 
       exports.down(() => {
-        next(err);
+        next(error);
       });
     });
 };
@@ -149,8 +150,8 @@ exports.down = function (next) {
     .then(splitCommands)
     .then(runTransactionSequence)
     .then(() => next(null))
-    .catch(err => {
+    .catch(error => {
       // console.log(`'down' migration was failed`)
-      next(err);
+      next(error);
     });
 };
