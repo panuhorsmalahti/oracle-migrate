@@ -1,16 +1,34 @@
+const assert = require('assert');
 const fs = require('fs');
+const path = require('path');
 const SimpleOracleDB = require('simple-oracledb');
 const oracledb = require('oracledb');
 
 SimpleOracleDB.extend(oracledb);
 
 /**
+ * Reads config file and uses configuration to connect to oracle db
+ * @param  {string} path path to config file
+ * @return {undefined}
+ */
+function readConfig() {
+  assert(process.env.NODE_ENV, 'NODE_ENV should exist with valid value');
+
+  const file = fs.readFileSync(path.join(process.cwd(), '.oracle-migrate'));
+  const config = JSON.parse(file);
+
+  return config[process.env.NODE_ENV];
+}
+
+const configFile = readConfig();
+
+/**
  * Connection configuration for Oracle DB
  */
 const dbConfig = {
-  user: process.env.NODE_ORACLEDB_USER,
-  password : process.env.NODE_ORACLEDB_PASSWORD,
-  connectString : process.env.NODE_ORACLEDB_CONNECTIONSTRING
+  user: `"${configFile.username}"`,
+  password : configFile.password,
+  connectString : configFile.connectionString
 };
 
 const sqlDelimiter = '-----';

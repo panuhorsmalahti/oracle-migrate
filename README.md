@@ -9,13 +9,44 @@ Before installing this module take note how to install `node-oracledb` [here](ht
 
 ## Configuration
 
-These environment variables are needed to be configured in your system:
+In your working directory create a file `.oracle-migrate`, for example:
 
 ```
-  database username:      NODE_ORACLEDB_USER=username
-  database password:      NODE_ORACLEDB_PASSWORD=password
-  url to database:        NODE_ORACLEDB_CONNECTIONSTRING=localhost:1521
+/app
+/logs
+/migrations
+/tests
+.eslint
+.gitignore
+.oracle-migrate
+app.js
+package.json
+readme.md
 ```
+
+The content of this file is a plain JSON with different configurations. Current configuration is taken from NODE_ENV in runtime.
+
+```
+{
+  "development": {
+    "connectionString": "localhost:1521/hr",
+    "password": "user",
+    "username": "john.doe"
+  },
+  "production": {
+    "connectionString": "localhost:1521/hr",
+    "password": "user",
+    "username": "john.doe"
+  },
+  "test": {
+    "connectionString": "localhost:1521/hr",
+    "password": "user",
+    "username": "john.doe"
+  }
+}
+```
+
+This is a plain JSON with different configurations.
 
 ## Usage
 
