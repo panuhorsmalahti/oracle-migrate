@@ -46,6 +46,16 @@ The content of this file is a plain JSON with different configurations. Current 
 }
 ```
 
+Or simple format
+
+```
+{
+  "connectionString": "localhost:1521/hr",
+  "password": "user",
+  "username": "john.doe"
+}
+```
+
 This is a plain JSON with different configurations.
 
 ## Usage

@@ -7,12 +7,6 @@
     "oracle-migrate": "./bin/migrate"
   },
   "scripts": {
-    "start": "node ./bin/migrate",
-    "create": "node ./bin/migrate create",
-    "up": "node ./bin/migrate up",
-    "down": "node ./bin/migrate down",
-    "downall": "node ./bin/migrate down all",
-    "history": "node ./bin/migrate history",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
