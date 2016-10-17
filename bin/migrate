@@ -1,16 +1,16 @@
 #!/usr/bin/env node
-
+const assert = require('assert');
 const childProcess = require('child_process');
 const dateFormat = require('dateformat');
 const fs = require('fs');
 const path = require('path');
 
-const migrate = require('../');
 const _package = require('../package.json');
-const oracledb = require('../lib/oracledb');
+const lib = require('../lib');
 
 const args = process.argv.slice(2); // eslint-disable-line
 const options = { args: [] };
+let config;
 
 /**
  * Usage information
@@ -51,18 +51,7 @@ function required() {
     return args.shift();
   }
 
-  abort(`${arg} requires an argument`);
-}
-
-/**
- * Abort with a message and exits process with error `1`
- *
- * @param {string} msg mesasage to show
- * @returns {undefined}
- */
-function abort(msg) {
-  console.error('  %s', msg);
-  process.exit(1);
+  lib.tools.abort(`${arg} requires an argument`);
 }
 
 /*
@@ -101,27 +90,6 @@ while (args.length) {
 }
 
 /**
- * Log a keyed message
- *
- * @param {string} key error type
- * @param {string} msg message to log
- * @returns {undefined}
- */
-function log(key, msg) {
-  console.log('  \033[90m%s :\033[0m \033[36m%s\033[0m', key, msg); // eslint-disable-line
-}
-
-/**
- * Slugify the given `str`
- *
- * @param {string} str string to slugify
- * @returns {string} returns string where spaces are replaced by `-`
- */
-function slugify(str) {
-  return str.replace(/[\s+\'\"]/g, '-');
-}
-
-/**
  * List of all available commands
  */
 const commands = {
@@ -155,11 +123,11 @@ const commands = {
     let title = options.args[0]
 
     if(!title) {
-      log('error', 'title is not specified');
+      lib.tools.log('error', 'title is not specified');
       return;
     }
 
-    title = slugify(title);
+    title = lib.tools.slugify(title);
     title = `${curr}-${title}`;
 
     /* if (options.dateFormat) {
@@ -181,40 +149,42 @@ const commands = {
    * @returns {undefined}
    */
   history: () => {
+    const oracledb = new lib.OracleDB(config);
+
     oracledb.loadMigrateData()
       .then(data => {
         if (data.rows.length === 0) {
-          return log('history', 'no history to show');
+          return lib.tools.log('history', 'no history to show');
         }
 
-        log('history', 'from database');
+        lib.tools.log('history', 'from database');
         data.rows
           .sort()
           .map(e => e.TITLE)
-          .forEach(e => log('       ', e));
+          .forEach(e => lib.tools.log('       ', e));
       })
       .catch(err => {
         if(err.message.includes('00942')) {
-          return log('history', 'Migration table does not exists in the database');
+          return lib.tools.log('history', 'Migration table does not exists in the database');
         }
 
-        log('history', err.message);
+        lib.tools.log('history', err.message);
       });
   },
 
   /**
    * Shows local migration files
-   * 
+   *
    * @returns {undefined}
    */
   list: () => {
-    log('history', 'local migration files');
+    lib.tools.log('history', 'local migration files');
 
     fs.readdirSync('./migrations')
       .filter(file => file.match(/^\d+.*\.js$/))
       .sort()
       .forEach(file => {
-        log('       ', file);
+        lib.tools.log('       ', file);
       });
   }
 };
@@ -230,7 +200,7 @@ const commands = {
 function create(name, template) {
   const p = path.join(`migrations/${name}.js`);
 
-  log('create', path.join(process.cwd(), p));
+  lib.tools.log('create', path.join(process.cwd(), p));
   fs.writeFileSync(p, template);
 }
 
@@ -258,14 +228,14 @@ function createSql(name) {
  * @returns {undefined}
  */
 function performMigration(direction, migrationName) {
-  const set = migrate.load('migrations', oracledb.config);
+  const set = lib.tools.load('migrations', config);
 
   set.on('init', () => {
     /*
      * Just log to console every migration
      */
     set.on('migration', (migration, _direction) => {
-      log(_direction, migration.title);
+      lib.tools.log(_direction, migration.title);
     });
 
     /*
@@ -273,17 +243,17 @@ function performMigration(direction, migrationName) {
      */
     set[direction](migrationName, err => {
       if (err) {
-        log('error', err);
+        lib.tools.log('error', err);
         process.exit(0);
       }
 
-      log('migration', 'complete');
+      lib.tools.log('migration', 'complete');
       process.exit(0);
     });
   });
 
   set.on('error', err => {
-    log('migration error', err);
+    lib.tools.log('migration error', err);
     process.exit(0);
   });
 }
@@ -302,13 +272,24 @@ try {
   fs.mkdirSync(path.join('migrations', 'sql'), 0o774); // eslint-disable-line
 } catch (ex) {} // eslint-disable-line
 
+try {
+  config = lib.tools.readConfig('.oracle-migrate', process.cwd());
+} catch(ex) {
+  if (ex.code === 'ENOENT') {
+    lib.tools.abort(`Configuration file '${path.basename(ex.path)}' does not exists`);
+    return;
+  }
+
+  lib.tools.abort(ex);
+}
+
 /**
  * Invoke command
  */
 let command = options.command;
 
 if (!(command in commands)) {
-  abort(`unknown command "${command}"`);
+  lib.tools.abort(`unknown command "${command}"`);
 }
 
 command = commands[command];
