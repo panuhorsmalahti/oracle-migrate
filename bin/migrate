@@ -30,7 +30,6 @@ const usage = [
   '     ---------------------------------------------------------------------------',
   '     list               shows all local migration scripts',
   '     history            fetches migration history from the database and shows it',
-  '     --install-dep      executes npm to install and save for you dependencies',
   '     ---------------------------------------------------------------------------',
   '     help, -h, --help   prints help',
   ''
@@ -67,17 +66,6 @@ while (args.length) {
   case '--help':
   case 'help':
     console.log(usage);
-    process.exit();
-    break;
-  case '--date-format':
-    options.dateFormat = required();
-    break;
-  case '--install-dep':
-    Object.keys(_package.dependencies)
-      .forEach(e => {
-        childProcess.execSync(`npm install ${e} --save`, {stdio: [0, 1, 2]});
-      });
-
     process.exit();
     break;
   default:

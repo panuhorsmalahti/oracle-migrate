@@ -26,7 +26,7 @@ readme.md
 
 The content of this file is a plain JSON with different configurations. Current configuration is taken from NODE_ENV in runtime.
 
-```
+```json
 {
   "development": {
     "connectionString": "localhost:1521/hr",
@@ -48,7 +48,7 @@ The content of this file is a plain JSON with different configurations. Current 
 
 Or simple format
 
-```
+```json
 {
   "connectionString": "localhost:1521/hr",
   "password": "user",
@@ -57,6 +57,33 @@ Or simple format
 ```
 
 This is a plain JSON with different configurations.
+
+Also you can create `.oracle-migrate.js`, write here your custom logic and export config
+
+```js
+const username = require('username');
+
+const config = require('./app/config');
+let oracleUsername = config.get('ORACLE_USERNAME');
+
+if (process.env.NODE_ENV === 'development') {
+  oracleUsername = username.sync();
+}
+
+module.exports = {
+  "development": {
+    "connectionString": "localhost:1521/hr",
+    "password": "user",
+    "username": oracleUsername
+  },
+  "production": {
+    "connectionString": "localhost:1521/hr",
+    "password": "user",
+    "username": oracleUsername
+  }
+}
+
+```
 
 ## Usage
 
@@ -74,8 +101,6 @@ Commands:
 
     list             shows all local migration scripts
     history          fetches migration history from the database and shows it
-
-    --install-dep    executes npm to install and save for you dependencies
 
     help             prints help
 ```
@@ -97,7 +122,7 @@ SQL files are created empty, so you can write there your own code. Oracle databa
 
 For example:
 
-```
+```sql
 CREATE TABLE COUNTRIES
 (
   ID VARCHAR2(20) NOT NULL
