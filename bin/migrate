@@ -272,15 +272,27 @@ try {
   fs.mkdirSync(path.join('migrations', 'sql'), 0o774); // eslint-disable-line
 } catch (ex) {} // eslint-disable-line
 
+/*
+ * Try to load config file
+ * Firstly it tries to load `.oracle-migrate` in JSON format
+ * If fails -> try to load `.oracle-migrate.js` in JS format (can contain custom logic)
+ */
 try {
-  config = lib.tools.readConfig('.oracle-migrate', process.cwd());
-} catch(ex) {
-  if (ex.code === 'ENOENT') {
-    lib.tools.abort(`Configuration file '${path.basename(ex.path)}' does not exists`);
-    return;
+  config = lib.tools.readConfigJSON('.oracle-migrate', process.cwd());
+} catch(exjson) {
+  if (exjson.code !== 'ENOENT') {
+    lib.tools.abort(exjson);
   }
 
-  lib.tools.abort(ex);
+  try {
+    config = lib.tools.readConfigJS('.oracle-migrate.js', process.cwd());
+  } catch(exjs) {
+    if (exjs.code !== 'ENOENT') {
+      lib.tools.abort(exjs);
+    }
+
+    lib.tools.abort(`Configuration files '${path.basename(exjs.path)}' nor '${path.basename(exjson.path)}' do not exist`);
+  }
 }
 
 /**
