@@ -66,7 +66,7 @@ while (args.length) {
   case '--help':
   case 'help':
     console.log(usage);
-    process.exit();
+    process.exit(0);
     break;
   default:
     if (options.command) {
@@ -232,7 +232,7 @@ function performMigration(direction, migrationName) {
     set[direction](migrationName, err => {
       if (err) {
         lib.tools.log('error', err);
-        process.exit(0);
+        process.exit(1);
       }
 
       lib.tools.log('migration', 'complete');
@@ -242,7 +242,7 @@ function performMigration(direction, migrationName) {
 
   set.on('error', err => {
     lib.tools.log('migration error', err);
-    process.exit(0);
+    process.exit(1);
   });
 }
 
