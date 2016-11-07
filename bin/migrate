@@ -12,6 +12,18 @@ const args = process.argv.slice(2); // eslint-disable-line
 const options = { args: [] };
 let config;
 
+function logError(error) {
+  console.error('oracle-migrate', error)
+  process.exit(1);
+}
+
+process.on('uncaughtException', logError);
+process.on('unhandledRejection', logError);
+process.on('SIGINT', function() {
+  console.error('oracle-migrate: SIGINT')
+  process.exit(1);
+});
+
 /**
  * Usage information
  */

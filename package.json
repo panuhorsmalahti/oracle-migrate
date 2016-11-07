@@ -1,12 +1,13 @@
 {
   "name": "oracle-migrate",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "description": "Migration framework for node and Oracle DB",
   "main": "index.js",
   "bin": {
     "oracle-migrate": "./bin/migrate"
   },
   "scripts": {
+    "start": "node bin/migrate",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
