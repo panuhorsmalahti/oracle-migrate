@@ -1,6 +1,6 @@
 {
   "name": "oracle-migrate",
-  "version": "0.0.10",
+  "version": "0.0.11",
   "description": "Migration framework for node and Oracle DB",
   "main": "index.js",
   "bin": {
