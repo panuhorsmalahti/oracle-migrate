@@ -41,15 +41,12 @@ const run = commands[args.cmd];
 
 process.on('uncaughtException', tools.abort);
 process.on('unhandledRejection', tools.abort);
-process.on('SIGINT', () => {
-  tools.abort(`SIGINT`);
-});
+process.on('SIGINT', () => tools.abort(`SIGINT`) );
 
 if(!run) {
   tools.abort(`unknown command "${args.cmd}"`);
 }
 
 config = tools.readConfig('.oracle-migrate', process.cwd());
-
 libCommands.prepareMigrationFolderStructure();
 run(args.subcmd);
