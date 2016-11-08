@@ -1,32 +1,15 @@
 #!/usr/bin/env node
-const assert = require('assert');
-const childProcess = require('child_process');
-const dateFormat = require('dateformat');
-const fs = require('fs');
-const path = require('path');
+const argv = require('yargs').argv;
 
-const _package = require('../package.json');
-const lib = require('../lib');
+const libCommands = require('../lib').commands;
+const tools = require('../lib').tools;
 
-const args = process.argv.slice(2); // eslint-disable-line
-const options = { args: [] };
 let config;
 
-function logError(error) {
-  console.error('oracle-migrate', error)
-  process.exit(1);
+const args = {
+  cmd: argv._[0],
+  subcmd: argv._[1]
 }
-
-process.on('uncaughtException', logError);
-process.on('unhandledRejection', logError);
-process.on('SIGINT', function() {
-  console.error('oracle-migrate: SIGINT')
-  process.exit(1);
-});
-
-/**
- * Usage information
- */
 const usage = [
   '',
   '  Usage: migrate [command]',
@@ -43,245 +26,30 @@ const usage = [
   '     list               shows all local migration scripts',
   '     history            fetches migration history from the database and shows it',
   '     ---------------------------------------------------------------------------',
-  '     help, -h, --help   prints help',
+  '     help               prints this help',
   ''
 ].join('\n');
-
-/**
- * Migration template
- */
-const templateFile = fs.readFileSync(path.join(__dirname, '../', 'templates/create.js'), 'utf8');
-
-/**
- * Require an argument
- *
- * @returns {undefined}
- */
-function required() {
-  if (args.length) {
-    return args.shift();
-  }
-
-  lib.tools.abort(`${arg} requires an argument`);
-}
-
-/*
- * Parse arguments
- */
-let arg;
-
-while (args.length) {
-  arg = args.shift();
-
-  switch (arg) {
-  case '-h':
-  case '--help':
-  case 'help':
-    console.log(usage);
-    process.exit(0);
-    break;
-  default:
-    if (options.command) {
-      options.args.push(arg);
-    } else {
-      options.command = arg;
-    }
-  }
-}
-
-/**
- * List of all available commands
- */
 const commands = {
-  /**
-   * up [name]
-   *
-   * @param {string} migrationName migration file name
-   * @returns {undefined}
-   */
-  up: migrationName => {
-    performMigration('up', migrationName);
-  },
+  up: migrationName => libCommands.performMigration('up', migrationName, config),
+  down: migrationName => libCommands.performMigration('down', migrationName, config),
+  create: title => libCommands.createMigrationScript(title, process.cwd()),
+  history: () => libCommands.migrationHistory(config),
+  list: () => libCommands.listLocalMigrations(),
+  help: () => console.log(usage)
+}
+const run = commands[args.cmd];
 
-  /**
-   * down [name]
-   *
-   * @param {string} migrationName migration file name
-   * @returns {undefined}
-   */
-  down: migrationName => {
-    performMigration('down', migrationName);
-  },
+process.on('uncaughtException', tools.abort);
+process.on('unhandledRejection', tools.abort);
+process.on('SIGINT', () => {
+  tools.abort(`SIGINT`);
+});
 
-  /**
-   * Create new file from template with title (if present)
-   *
-   * @returns {undefined}
-   */
-  create: () => {
-    let curr = Date.now();
-    let title = options.args[0]
-
-    if(!title) {
-      lib.tools.log('error', 'title is not specified');
-      return;
-    }
-
-    title = lib.tools.slugify(title);
-    title = `${curr}-${title}`;
-
-    /* if (options.dateFormat) {
-      curr = dateFormat(curr, options.dateFormat);
-    } */
-
-    const o = createSql(title);
-    let templateModified = templateFile;
-
-    templateModified = templateModified.replace(/{up}/, o.pathUp);
-    templateModified = templateModified.replace(/{down}/, o.pathDown);
-
-    create(title, templateModified);
-  },
-
-  /**
-   * Shows history of migrations fetched form the database table
-   *
-   * @returns {undefined}
-   */
-  history: () => {
-    const oracledb = new lib.OracleDB(config);
-
-    oracledb.loadMigrateData()
-      .then(data => {
-        if (data.rows.length === 0) {
-          return lib.tools.log('history', 'no history to show');
-        }
-
-        lib.tools.log('history', 'from database');
-        data.rows
-          .sort()
-          .map(e => e.TITLE)
-          .forEach(e => lib.tools.log('       ', e));
-      })
-      .catch(err => {
-        if(err.message.includes('00942')) {
-          return lib.tools.log('history', 'Migration table does not exists in the database');
-        }
-
-        lib.tools.log('history', err.message);
-      });
-  },
-
-  /**
-   * Shows local migration files
-   *
-   * @returns {undefined}
-   */
-  list: () => {
-    lib.tools.log('history', 'local migration files');
-
-    fs.readdirSync('./migrations')
-      .filter(file => file.match(/^\d+.*\.js$/))
-      .sort()
-      .forEach(file => {
-        lib.tools.log('       ', file);
-      });
-  }
-};
-
-/**
- * Create a migration with the given `name`.
- * Creates related sql files in sql folder
- *
- * @param {string} name file name
- * @param {string} template template file string
- * @returns {undefined}
- */
-function create(name, template) {
-  const p = path.join(`migrations/${name}.js`);
-
-  lib.tools.log('create', path.join(process.cwd(), p));
-  fs.writeFileSync(p, template);
+if(!run) {
+  tools.abort(`unknown command "${args.cmd}"`);
 }
 
-/**
- * Creates sqls
- *
- * @param {string} name file name
- * @returns {object} returns 2 paths
- */
-function createSql(name) {
-  const pathUp = `migrations/sql/${name}-up.sql`;
-  const pathDown = `migrations/sql/${name}-down.sql`;
+config = tools.readConfig('.oracle-migrate', process.cwd());
 
-  fs.writeFileSync(pathUp, '');
-  fs.writeFileSync(pathDown, '');
-
-  return { pathUp, pathDown };
-}
-
-/**
- * Perform a migration in the given `direction`.
- *
- * @param {number} direction direction
- * @param {string} migrationName migration file name if present
- * @returns {undefined}
- */
-function performMigration(direction, migrationName) {
-  const set = lib.tools.load('migrations', config);
-
-  set.on('init', () => {
-    /*
-     * Just log to console every migration
-     */
-    set.on('migration', (migration, _direction) => {
-      lib.tools.log(_direction, migration.title);
-    });
-
-    /*
-     * Do migration
-     */
-    set[direction](migrationName, err => {
-      if (err) {
-        lib.tools.log('error', err);
-        process.exit(1);
-      }
-
-      lib.tools.log('migration', 'complete');
-      process.exit(0);
-    });
-  });
-
-  set.on('error', err => {
-    lib.tools.log('migration error', err);
-    process.exit(1);
-  });
-}
-
-/**
- * Prepare folders if they don't exist
- *
- * ./migrations
- * ./migrations/sql
- */
-try {
-  fs.mkdirSync(path.join('migrations'), 0o774); // eslint-disable-line
-} catch (ex) {} // eslint-disable-line
-
-try {
-  fs.mkdirSync(path.join('migrations', 'sql'), 0o774); // eslint-disable-line
-} catch (ex) {} // eslint-disable-line
-
-/**
- * Invoke command
- */
-let command = options.command;
-
-if (!(command in commands)) {
-  lib.tools.abort(`unknown command "${command}"`);
-}
-
-config = lib.tools.readConfig('.oracle-migrate', process.cwd());
-
-command = commands[command];
-command.apply(this, options.args);
+libCommands.prepareMigrationFolderStructure();
+run(args.subcmd);

@@ -1,6 +1,6 @@
 {
   "name": "oracle-migrate",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "description": "Migration framework for node and Oracle DB",
   "main": "index.js",
   "bin": {
@@ -27,9 +27,9 @@
   "author": "Oleh Chaplya",
   "license": "MIT",
   "dependencies": {
-    "dateformat": "^1.0.12",
     "oracledb": "^1.11.0",
-    "simple-oracledb": "^1.1.21"
+    "simple-oracledb": "^1.1.21",
+    "yargs": "^6.3.0"
   },
   "devDependencies": {
     "@eleks/eslint-config-eleks": "^0.1.1",
