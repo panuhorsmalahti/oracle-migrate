@@ -1,5 +1,5 @@
 # oracle-migrate
-Small migrate framework for Oracle DB
+Small migrate framework for Oracle DB - [link to npm](https://www.npmjs.com/package/oracle-migrate)
 
 ## Installation
 

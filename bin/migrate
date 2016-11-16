@@ -10,6 +10,8 @@ const args = {
   cmd: argv._[0],
   subcmd: argv._[1]
 }
+const configFileName = '.oracle-migrate';
+const currentPath = process.cwd();
 const usage = [
   '',
   '  Usage: migrate [command]',
@@ -30,10 +32,19 @@ const usage = [
   ''
 ].join('\n');
 const commands = {
-  up: migrationName => libCommands.performMigration('up', migrationName, config),
-  down: migrationName => libCommands.performMigration('down', migrationName, config),
-  create: title => libCommands.createMigrationScript(title, process.cwd()),
-  history: () => libCommands.migrationHistory(config),
+  up: migrationName => {
+    config = tools.readConfig(configFileName, currentPath);
+    libCommands.performMigration('up', migrationName, config) ;
+  },
+  down: migrationName => {
+    config = tools.readConfig(configFileName, currentPath);
+    libCommands.performMigration('down', migrationName, config);
+  },
+  create: title => libCommands.createMigrationScript(title, currentPath),
+  history: () => {
+    config = tools.readConfig(configFileName, currentPath);
+    libCommands.migrationHistory(config);
+  },
   list: () => libCommands.listLocalMigrations(),
   help: () => console.log(usage)
 }
@@ -47,6 +58,5 @@ if(!run) {
   tools.abort(`unknown command "${args.cmd}"`);
 }
 
-config = tools.readConfig('.oracle-migrate', process.cwd());
 libCommands.prepareMigrationFolderStructure();
 run(args.subcmd);
