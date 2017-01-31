@@ -34,11 +34,21 @@ const usage = [
 const commands = {
   up: migrationName => {
     config = tools.readConfig(configFileName, currentPath);
-    libCommands.performMigration('up', migrationName, config) ;
+    libCommands.performMigration('up', migrationName, config)
+    .then(() => {
+      process.exit(0);
+    }, error => {
+      tools.abort(error);
+    });
   },
   down: migrationName => {
     config = tools.readConfig(configFileName, currentPath);
-    libCommands.performMigration('down', migrationName, config);
+    libCommands.performMigration('down', migrationName, config)
+    .then(() => {
+      process.exit(0);
+    }, error => {
+      tools.abort(error);
+    });
   },
   create: title => libCommands.createMigrationScript(title, currentPath),
   history: () => {
